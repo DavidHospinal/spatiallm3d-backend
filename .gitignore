@@ -1,0 +1,110 @@
+# Root .gitignore for SpatialLM3D Project
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+backend-api/.venv/
+
+# Environment variables
+.env
+.env.local
+*.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+# Gradle (for KMP project)
+.gradle/
+*/build/
+!gradle-wrapper.jar
+local.properties
+
+# Android
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+bin/
+gen/
+out/
+captures/
+.navigation/
+
+# iOS
+*.xcodeproj/
+*.xcworkspace/
+Pods/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Kotlin Multiplatform
+.kotlin/
+composeApp/.kotlin/
+
+# Large model files (clone del repo original)
+manycore-researchSpatialLM/
+
+# HuggingFace cache
+.cache/
+models/
+
+# Build outputs
+*.jar
+*.war
+*.ear
+
+# Documentation - exclude all .md except README.md
+*.md
+!README.md
+!backend-api/README.md
+
+# PowerShell scripts
+*.ps1
