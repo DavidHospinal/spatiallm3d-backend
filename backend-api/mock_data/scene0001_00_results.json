@@ -1,0 +1,80 @@
+{
+  "walls": [
+    {
+      "id": "wall_0",
+      "startPoint": {"x": 0.0, "y": 0.0, "z": 0.0},
+      "endPoint": {"x": 8.2, "y": 0.0, "z": 0.0},
+      "height": 2.8
+    },
+    {
+      "id": "wall_1",
+      "startPoint": {"x": 8.2, "y": 0.0, "z": 0.0},
+      "endPoint": {"x": 8.2, "y": 6.5, "z": 0.0},
+      "height": 2.8
+    },
+    {
+      "id": "wall_2",
+      "startPoint": {"x": 8.2, "y": 6.5, "z": 0.0},
+      "endPoint": {"x": 0.0, "y": 6.5, "z": 0.0},
+      "height": 2.8
+    },
+    {
+      "id": "wall_3",
+      "startPoint": {"x": 0.0, "y": 6.5, "z": 0.0},
+      "endPoint": {"x": 0.0, "y": 0.0, "z": 0.0},
+      "height": 2.8
+    }
+  ],
+  "doors": [
+    {
+      "id": "door_0",
+      "wallId": "wall_0",
+      "position": {"x": 6.5, "y": 0.0, "z": 0.0},
+      "width": 0.85,
+      "height": 2.1
+    }
+  ],
+  "windows": [
+    {
+      "id": "window_0",
+      "wallId": "wall_2",
+      "position": {"x": 4.1, "y": 6.5, "z": 1.0},
+      "width": 1.8,
+      "height": 1.5
+    }
+  ],
+  "objects": [
+    {
+      "id": "bbox_0",
+      "objectClass": "bed",
+      "position": {"x": 2.5, "y": 4.2, "z": 0.45},
+      "rotation": 0.0,
+      "scale": {"x": 2.0, "y": 1.6, "z": 0.9},
+      "confidence": 0.96
+    },
+    {
+      "id": "bbox_1",
+      "objectClass": "dresser",
+      "position": {"x": 6.8, "y": 1.5, "z": 0.5},
+      "rotation": 1.57,
+      "scale": {"x": 1.2, "y": 0.5, "z": 1.0},
+      "confidence": 0.92
+    },
+    {
+      "id": "bbox_2",
+      "objectClass": "nightstand",
+      "position": {"x": 1.2, "y": 3.2, "z": 0.35},
+      "rotation": 0.0,
+      "scale": {"x": 0.5, "y": 0.4, "z": 0.7},
+      "confidence": 0.88
+    },
+    {
+      "id": "bbox_3",
+      "objectClass": "chair",
+      "position": {"x": 5.5, "y": 2.1, "z": 0.48},
+      "rotation": 2.35,
+      "scale": {"x": 0.6, "y": 0.6, "z": 0.96},
+      "confidence": 0.84
+    }
+  ]
+}

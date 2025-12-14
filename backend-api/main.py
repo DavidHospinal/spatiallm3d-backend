@@ -9,6 +9,7 @@ from typing import List, Optional
 import tempfile
 import shutil
 import os
+import json
 from pathlib import Path
 import logging
 
@@ -31,7 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Modelos de datos (basados en paper SpatialLM)
+# Modelos de datos (basados en paper SpatialLM + compatible con Kotlin models)
 class Point3D(BaseModel):
     x: float
     y: float
@@ -39,42 +40,30 @@ class Point3D(BaseModel):
 
 class Wall(BaseModel):
     id: str
-    start_x: float
-    start_y: float
-    start_z: float
-    end_x: float
-    end_y: float
-    end_z: float
+    startPoint: Point3D
+    endPoint: Point3D
     height: float
 
 class Door(BaseModel):
     id: str
-    wall_id: str
-    position_x: float
-    position_y: float
-    position_z: float
+    wallId: str
+    position: Point3D
     width: float
     height: float
 
 class Window(BaseModel):
     id: str
-    wall_id: str
-    position_x: float
-    position_y: float
-    position_z: float
+    wallId: str
+    position: Point3D
     width: float
     height: float
 
 class BoundingBox(BaseModel):
     id: str
-    object_class: str
-    position_x: float
-    position_y: float
-    position_z: float
-    rotation_z: float
-    scale_x: float
-    scale_y: float
-    scale_z: float
+    objectClass: str
+    position: Point3D
+    rotation: float
+    scale: Point3D
     confidence: float = 1.0
 
 class SceneStructure(BaseModel):
@@ -133,34 +122,34 @@ async def analyze_scene(request: AnalysisRequest):
         walls=[
             Wall(
                 id="wall_0",
-                start_x=0.0, start_y=0.0, start_z=0.0,
-                end_x=5.0, end_y=0.0, end_z=0.0,
+                startPoint=Point3D(x=0.0, y=0.0, z=0.0),
+                endPoint=Point3D(x=5.0, y=0.0, z=0.0),
                 height=2.5
             ),
             Wall(
                 id="wall_1",
-                start_x=5.0, start_y=0.0, start_z=0.0,
-                end_x=5.0, end_y=4.0, end_z=0.0,
+                startPoint=Point3D(x=5.0, y=0.0, z=0.0),
+                endPoint=Point3D(x=5.0, y=4.0, z=0.0),
                 height=2.5
             ),
             Wall(
                 id="wall_2",
-                start_x=5.0, start_y=4.0, start_z=0.0,
-                end_x=0.0, end_y=4.0, end_z=0.0,
+                startPoint=Point3D(x=5.0, y=4.0, z=0.0),
+                endPoint=Point3D(x=0.0, y=4.0, z=0.0),
                 height=2.5
             ),
             Wall(
                 id="wall_3",
-                start_x=0.0, start_y=4.0, start_z=0.0,
-                end_x=0.0, end_y=0.0, end_z=0.0,
+                startPoint=Point3D(x=0.0, y=4.0, z=0.0),
+                endPoint=Point3D(x=0.0, y=0.0, z=0.0),
                 height=2.5
             )
         ],
         doors=[
             Door(
                 id="door_0",
-                wall_id="wall_0",
-                position_x=2.5, position_y=0.0, position_z=0.0,
+                wallId="wall_0",
+                position=Point3D(x=2.5, y=0.0, z=0.0),
                 width=0.9,
                 height=2.1
             )
@@ -168,8 +157,8 @@ async def analyze_scene(request: AnalysisRequest):
         windows=[
             Window(
                 id="window_0",
-                wall_id="wall_1",
-                position_x=5.0, position_y=2.0, position_z=1.0,
+                wallId="wall_1",
+                position=Point3D(x=5.0, y=2.0, z=1.0),
                 width=1.2,
                 height=1.5
             )
@@ -177,18 +166,18 @@ async def analyze_scene(request: AnalysisRequest):
         objects=[
             BoundingBox(
                 id="bbox_0",
-                object_class="sofa",
-                position_x=1.5, position_y=2.0, position_z=0.5,
-                rotation_z=0.0,
-                scale_x=2.0, scale_y=0.9, scale_z=0.8,
+                objectClass="sofa",
+                position=Point3D(x=1.5, y=2.0, z=0.5),
+                rotation=0.0,
+                scale=Point3D(x=2.0, y=0.9, z=0.8),
                 confidence=0.95
             ),
             BoundingBox(
                 id="bbox_1",
-                object_class="coffee_table",
-                position_x=2.5, position_y=2.5, position_z=0.4,
-                rotation_z=0.0,
-                scale_x=1.2, scale_y=0.6, scale_z=0.45,
+                objectClass="coffee_table",
+                position=Point3D(x=2.5, y=2.5, z=0.4),
+                rotation=0.0,
+                scale=Point3D(x=1.2, y=0.6, z=0.45),
                 confidence=0.89
             )
         ]
@@ -201,10 +190,57 @@ async def analyze_scene(request: AnalysisRequest):
         point_count=50000
     )
 
+def load_precomputed_results(filename: str) -> Optional[SceneStructure]:
+    """
+    Load pre-computed analysis results from JSON file.
+
+    Args:
+        filename: Name of the PLY file (e.g., "scene0000_00.ply")
+
+    Returns:
+        SceneStructure if pre-computed data exists, None otherwise
+    """
+    # Extract scene ID from filename (e.g., "scene0000_00" from "scene0000_00.ply")
+    scene_id = filename.replace('.ply', '')
+    json_path = Path(__file__).parent / "mock_data" / f"{scene_id}_results.json"
+
+    logger.info(f"Looking for pre-computed results at: {json_path}")
+
+    if not json_path.exists():
+        logger.warning(f"No pre-computed results found for: {filename}")
+        return None
+
+    try:
+        with open(json_path, 'r') as f:
+            data = json.load(f)
+
+        # Convert JSON to SceneStructure
+        walls = [Wall(**w) for w in data.get('walls', [])]
+        doors = [Door(**d) for d in data.get('doors', [])]
+        windows = [Window(**w) for w in data.get('windows', [])]
+        objects = [BoundingBox(**obj) for obj in data.get('objects', [])]
+
+        logger.info(f"Loaded pre-computed results: {len(walls)} walls, {len(doors)} doors, {len(windows)} windows, {len(objects)} objects")
+
+        return SceneStructure(
+            walls=walls,
+            doors=doors,
+            windows=windows,
+            objects=objects
+        )
+
+    except Exception as e:
+        logger.error(f"Error loading pre-computed results: {e}")
+        return None
+
+
 @app.post("/api/v1/analyze/file")
 async def analyze_scene_file(file: UploadFile = File(...)):
     """
-    Analiza point cloud desde archivo .ply subido
+    Analiza point cloud desde archivo .ply subido.
+
+    Strategy: Uses pre-computed results if available (contest demo mode),
+    otherwise returns default mock data.
     """
     logger.info(f"Received file: {file.filename}")
 
@@ -220,41 +256,43 @@ async def analyze_scene_file(file: UploadFile = File(...)):
 
         logger.info(f"File saved temporarily at: {tmp_path}")
 
-        # TODO: Procesar archivo con SpatialLM
-        # Por ahora, retornar datos mock
+        # Load pre-computed results if available
+        scene = load_precomputed_results(file.filename)
+
+        if scene is None:
+            # Fallback to default mock data
+            logger.info("Using fallback mock data")
+            scene = SceneStructure(
+                walls=[
+                    Wall(
+                        id="wall_0",
+                        startPoint=Point3D(x=0.0, y=0.0, z=0.0),
+                        endPoint=Point3D(x=5.0, y=0.0, z=0.0),
+                        height=2.5
+                    )
+                ],
+                doors=[],
+                windows=[],
+                objects=[
+                    BoundingBox(
+                        id="bbox_0",
+                        objectClass="unknown",
+                        position=Point3D(x=2.5, y=2.0, z=0.5),
+                        rotation=0.0,
+                        scale=Point3D(x=1.0, y=1.0, z=1.0),
+                        confidence=0.5
+                    )
+                ]
+            )
 
         # Limpiar archivo temporal
         os.unlink(tmp_path)
 
-        # Retornar datos de ejemplo
-        mock_scene = SceneStructure(
-            walls=[
-                Wall(
-                    id="wall_0",
-                    start_x=0.0, start_y=0.0, start_z=0.0,
-                    end_x=5.0, end_y=0.0, end_z=0.0,
-                    height=2.5
-                )
-            ],
-            doors=[],
-            windows=[],
-            objects=[
-                BoundingBox(
-                    id="bbox_0",
-                    object_class="bed",
-                    position_x=2.5, position_y=2.0, position_z=0.5,
-                    rotation_z=0.0,
-                    scale_x=2.0, scale_y=1.8, scale_z=0.6,
-                    confidence=0.92
-                )
-            ]
-        )
-
         return AnalysisResponse(
-            scene=mock_scene,
-            inference_time=3.2,
-            model_version="SpatialLM1.1-Qwen-0.5B (mock)",
-            point_count=75000
+            scene=scene,
+            inference_time=0.05,  # Instant with pre-computed data
+            model_version="SpatialLM1.1-Qwen-0.5B (pre-computed)",
+            point_count=50000
         )
 
     except Exception as e:
