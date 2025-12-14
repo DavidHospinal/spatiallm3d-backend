@@ -97,7 +97,8 @@ async def root():
         "endpoints": {
             "health": "/health",
             "analyze": "/api/v1/analyze (POST)",
-            "analyze_file": "/api/v1/analyze/file (POST)"
+            "analyze_file": "/api/v1/analyze/file (POST)",
+            "precomputed": "/api/v1/precomputed/{scene_id} (GET)"
         }
     }
 
@@ -105,6 +106,53 @@ async def root():
 async def health_check():
     """Health check endpoint para monitoring"""
     return {"status": "healthy"}
+
+def list_available_scenes() -> List[str]:
+    """List all available pre-computed scenes."""
+    mock_data_dir = Path(__file__).parent / "mock_data"
+    if not mock_data_dir.exists():
+        return []
+    json_files = mock_data_dir.glob("*_results.json")
+    return [f.stem.replace("_results", "") for f in json_files]
+
+@app.get("/api/v1/precomputed/{scene_id}")
+async def get_precomputed_result(scene_id: str):
+    """
+    Get pre-computed analysis results by scene ID.
+
+    This endpoint allows the KMP app to fetch results by filename
+    without uploading the entire PLY file.
+
+    Args:
+        scene_id: Scene identifier without .ply extension (e.g., "scene0000_00")
+
+    Returns:
+        AnalysisResponse with pre-computed data
+
+    Example:
+        GET /api/v1/precomputed/scene0000_00
+    """
+    logger.info(f"Fetching pre-computed results for: {scene_id}")
+
+    # Add .ply extension for lookup
+    filename = f"{scene_id}.ply"
+    scene = load_precomputed_results(filename)
+
+    if scene is None:
+        logger.warning(f"No pre-computed results found for: {scene_id}")
+        available_scenes = list_available_scenes()
+        raise HTTPException(
+            status_code=404,
+            detail=f"No pre-computed results available for scene: {scene_id}. "
+                   f"Available scenes: {available_scenes}"
+        )
+
+    return AnalysisResponse(
+        scene=scene,
+        inference_time=0.05,
+        model_version="SpatialLM1.1-Qwen-0.5B (pre-computed)",
+        point_count=50000
+    )
 
 @app.post("/api/v1/analyze")
 async def analyze_scene(request: AnalysisRequest):
